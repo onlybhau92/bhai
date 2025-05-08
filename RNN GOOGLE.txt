@@ -1,0 +1,274 @@
+import pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt 
+from keras.models import Sequential
+from keras.layers import Dense,SimpleRNN
+from sklearn.model_selection import train_test_split 
+from sklearn.preprocessing import MinMaxScaler
+
+
+
+df=pd.read_csv('GOOGLE Stock Data set.csv')
+
+
+df.head()
+
+
+df.isnull().sum()
+
+
+df['Date']=pd.to_datetime(df['Date'])
+df.set_index('Date',inplace=True)
+data=df[['Close']]
+
+
+
+scaled_data = scaler.fit_transform(data)
+plt.plot(scaled_data)
+
+
+#addditional plot this is right upward is only showing index no. of data 
+plt.plot(df.index, scaled_data)  # Use the 'Date' (index) for the x-axis
+plt.xlabel('Date')  # Label the x-axis
+plt.ylabel('Scaled Closing Price')  # Label the y-axis
+plt.title('Google Stock Prices (Scaled) Over Time')  # Title for the plot
+plt.xticks(rotation=45)  # Rotate the date labels for better readability
+plt.show()
+
+
+def create(time,scaled_data):
+    x,y=[],[]
+    for i in range(time,len(scaled_data)):
+        x.append(scaled_data[i-time:i,0])
+        y.append(scaled_data[i,0])
+    return np.asarray(x),np.asarray(y)
+x,y=create(60,scaled_data)
+x=x.reshape(x.shape[0],x.shape[1],1)
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,shuffle=False)
+
+
+
+
+
+from keras.layers import Input
+model = Sequential()
+model.add(Input(shape=(x_train.shape[1], 1)))
+model.add(SimpleRNN(units=40, return_sequences=True))
+model.add(SimpleRNN(units=20, return_sequences=True))
+model.add(SimpleRNN(units=10, return_sequences=False))
+model.add(Dense(units=1))
+model.compile(optimizer='adam', loss='mean_squared_error')
+model.summary()
+
+
+
+
+history=model.fit(x_train,y_train,epochs=40,batch_size=64,validation_data=(x_test,y_test))
+
+
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+
+
+
+y_predict=model.predict(x_test)
+
+
+
+y_predict=scaler.inverse_transform(y_predict)
+y_actual=scaler.inverse_transform(y_test.reshape(-1,1))
+plt.plot(y_predict)
+plt.plot(y_actual)
+
+
+#optional Graph with label
+plt.figure(figsize=(10, 5))
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title("Model Loss Over Epochs")
+plt.xlabel("Epoch")
+plt.ylabel("Loss (Mean Squared Error)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+#optional graph with label
+plt.figure(figsize=(10, 5))
+plt.plot(y_predict, label='Predicted Price')
+plt.plot(y_actual, label='Actual Price')
+plt.title("Predicted vs Actual Google Stock Prices")
+plt.xlabel("Time Step (Days in Test Set)")
+plt.ylabel("Stock Price (USD)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+Theory for the Practical:
+This code demonstrates how to build and train a Recurrent Neural Network (RNN), specifically using Simple RNN layers, to predict the Google stock prices based on historical data. The process includes data preprocessing, model building, training, and evaluation. Let’s break down the key steps involved in this process:
+
+1. Loading and Preprocessing the Data
+python
+Copy
+Edit
+import pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt 
+from keras.models import Sequential
+from keras.layers import Dense, SimpleRNN
+from sklearn.model_selection import train_test_split 
+from sklearn.preprocessing import MinMaxScaler
+
+df = pd.read_csv('GOOGLE Stock Data set.csv')
+df.head()
+Pandas is used to load the stock data into a DataFrame (df).
+
+The dataset contains stock data, with a column labeled 'Close' that represents the closing price of Google's stock.
+
+df.head() displays the first few rows of the data to get an idea of what the dataset looks like.
+
+python
+Copy
+Edit
+df.isnull().sum()
+This checks for any missing values in the dataset, ensuring data integrity before further analysis.
+
+python
+Copy
+Edit
+df['Date'] = pd.to_datetime(df['Date'])
+df.set_index('Date', inplace=True)
+data = df[['Close']]
+The 'Date' column is converted to a datetime format using pd.to_datetime().
+
+The date is then set as the index of the DataFrame, making the time series data easier to work with.
+
+Only the 'Close' column is retained, as it's the target variable we want to predict.
+
+2. Scaling the Data
+python
+Copy
+Edit
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaled_data = scaler.fit_transform(data)
+plt.plot(scaled_data)
+MinMaxScaler is used to scale the stock prices to a range between 0 and 1. This step is crucial when working with neural networks, as it helps with convergence and improves the training process.
+
+The scaled data is plotted to visualize the transformation.
+
+3. Creating Time-Series Data for the Model
+python
+Copy
+Edit
+def create(time, scaled_data):
+    x, y = [], []
+    for i in range(time, len(scaled_data)):
+        x.append(scaled_data[i-time:i, 0])
+        y.append(scaled_data[i, 0])
+    return np.asarray(x), np.asarray(y)
+
+x, y = create(60, scaled_data)
+x = x.reshape(x.shape[0], x.shape[1], 1)
+The function create() takes the historical data (scaled_data) and splits it into input-output pairs for training the RNN model. The time parameter represents the number of previous days (time steps) used to predict the next day's closing price.
+
+x: Contains the input features (60 previous days’ closing prices).
+
+y: Contains the target output (the next day's closing price).
+
+The data is reshaped to match the input requirements of the RNN model. The shape becomes (samples, time steps, features).
+
+python
+Copy
+Edit
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False)
+Train-Test Split: The data is split into training and testing sets. The shuffle=False argument ensures that the data is split chronologically (important for time series data).
+
+4. Building the RNN Model
+python
+Copy
+Edit
+model = Sequential()
+model.add(Input(shape=(x_train.shape[1], 1)))
+model.add(SimpleRNN(units=40, return_sequences=True))
+model.add(SimpleRNN(units=20, return_sequences=True))
+model.add(SimpleRNN(units=10, return_sequences=False))
+model.add(Dense(units=1))
+model.compile(optimizer='adam', loss='mean_squared_error')
+model.summary()
+RNN Architecture:
+
+Input Layer: The model receives input of shape (time steps, features) (i.e., 60 previous days of stock prices as features).
+
+First SimpleRNN Layer: 40 units (neurons), with return_sequences=True to output sequences, which is required for the next RNN layer.
+
+Second SimpleRNN Layer: 20 units, with return_sequences=True again.
+
+Third SimpleRNN Layer: 10 units, with return_sequences=False because it's the last RNN layer.
+
+Dense Layer: A fully connected layer with a single unit, predicting the next day's closing price.
+
+Activation Functions: By default, RNN layers use a tanh activation function, and the Dense layer has no activation function as it's a regression problem.
+
+Optimizer: Adam optimizer, which adapts the learning rate during training for efficient convergence.
+
+Loss Function: Mean Squared Error (MSE), which is appropriate for regression tasks.
+
+5. Training the Model
+python
+Copy
+Edit
+history = model.fit(x_train, y_train, epochs=40, batch_size=64, validation_data=(x_test, y_test))
+The model is trained on the training data for 40 epochs with a batch size of 64.
+
+Validation Data: The model’s performance is also monitored on the test data (x_test, y_test) during training.
+
+6. Visualizing the Loss
+python
+Copy
+Edit
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+Loss Plot: The training loss and validation loss over the epochs are plotted to observe how well the model is fitting to the data. The goal is for the training loss and validation loss to decrease and converge.
+
+7. Making Predictions
+python
+Copy
+Edit
+y_predict = model.predict(x_test)
+Prediction: The trained model is used to predict stock prices for the test data (x_test).
+
+8. Inverse Scaling
+python
+Copy
+Edit
+y_predict = scaler.inverse_transform(y_predict)
+y_actual = scaler.inverse_transform(y_test.reshape(-1, 1))
+The predicted values (y_predict) and the actual test values (y_test) are transformed back to the original scale (the actual stock prices) using inverse_transform(). This step is necessary because the model was trained on scaled data.
+
+9. Plotting the Predictions vs Actual Data
+python
+Copy
+Edit
+plt.plot(y_predict)
+plt.plot(y_actual)
+The predicted stock prices and the actual stock prices are plotted together to visually evaluate how well the model performed.
+
+Key Takeaways:
+Data Preprocessing: The stock data is scaled using MinMaxScaler to a range between 0 and 1, making it suitable for training neural networks.
+
+Time-Series Data: The dataset is transformed into a sequence of 60 past days’ closing prices used to predict the next day’s closing price.
+
+RNN Model: A SimpleRNN architecture is used, where each RNN layer helps capture temporal dependencies in the time-series data. The model’s output is a single value representing the predicted stock price.
+
+Model Evaluation: The model’s loss is visualized over training epochs, and the predictions are compared with actual values for evaluation.
+
+Stock Price Prediction: The model is trained and tested to predict the future stock price based on historical data.
+
+
+
+

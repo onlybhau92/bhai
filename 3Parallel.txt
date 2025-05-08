@@ -1,0 +1,180 @@
+// /*
+//   Windows does not support user defined reductions.
+//   This program may not run on MVSC++ compilers for Windows.
+//   Please use Linux Environment.[You can try using "windows subsystem for linux"]
+// */
+
+
+//Mam code
+#include<iostream>
+#include<omp.h>
+
+using namespace std;
+int minval(int arr[], int n){
+  int minval = arr[0];
+  #pragma omp parallel for reduction(min : minval)
+    for(int i = 0; i < n; i++){
+      if(arr[i] < minval) minval = arr[i];
+    }
+  return minval;
+}
+
+int maxval(int arr[], int n){
+  int maxval = arr[0];
+  #pragma omp parallel for reduction(max : maxval)
+    for(int i = 0; i < n; i++){
+      if(arr[i] > maxval) maxval = arr[i];
+    }
+  return maxval;
+}
+
+int sum(int arr[], int n){
+  int sum = 0;
+  #pragma omp parallel for reduction(+ : sum)
+    for(int i = 0; i < n; i++){
+      sum += arr[i];
+    }
+  return sum;
+}
+
+int average(int arr[], int n){
+  return (double)sum(arr, n) / n;
+}
+
+int main(){
+  int n = 5;
+  int arr[] = {1,2,3,4,5};
+  cout << "The minimum value is: " << minval(arr, n) << '\n';
+  cout << "The maximum value is: " << maxval(arr, n) << '\n';
+  cout << "The summation is: " << sum(arr, n) << '\n';
+  cout << "The average is: " << average(arr, n) << '\n';
+  return 0;
+}
+
+
+/*Easy
+#include <iostream>
+#include <omp.h>
+#include <vector>
+#include <climits> // For INT_MIN and INT_MAX
+
+using namespace std;
+
+int main() {
+    vector<int> arr = {4, 8, 15, 16, 23, 42};
+    int n = arr.size();
+
+    int min_val = INT_MAX;
+    int max_val = INT_MIN;
+    int sum = 0;
+    double average = 0.0;
+
+    // Parallel reduction for Min, Max, and Sum
+    #pragma omp parallel for reduction(min:min_val) reduction(max:max_val) reduction(+:sum)
+    for (int i = 0; i < n; ++i) {
+        if (arr[i] < min_val)
+            min_val = arr[i];
+        if (arr[i] > max_val)
+            max_val = arr[i];
+        sum += arr[i];
+    }
+
+    average = static_cast<double>(sum) / n;
+
+    // Output results
+    cout << "Min: " << min_val << endl;
+    cout << "Max: " << max_val << endl;
+    cout << "Sum: " << sum << endl;
+    cout << "Average: " << average << endl;
+
+    return 0;
+}
+
+*/
+
+
+
+/*
+//Theory 
+
+OpenMP (Open Multi-Processing) is an API (Application Programming Interface) that supports parallel programming in C, C++, and Fortran on shared-memory systems.
+
+🔍 What Does It Do?
+OpenMP allows programmers to write code that runs in parallel using multiple threads, without manually managing threads. You use compiler directives (pragmas) to tell the compiler which parts of the code should run in parallel.
+
+✅ Key Features:
+Easy to use (based on pragmas like #pragma omp parallel)
+
+Shared memory model (threads share global variables)
+
+Portable (works across many compilers/platforms)
+
+Supports:
+
+Parallel loops
+
+Reductions (min, max, sum, etc.)
+
+Synchronization (barriers, critical sections)
+
+Task-based parallelism
+
+
+
+🧵 Explanation of Directives:
+#pragma omp parallel for — runs the loop in parallel.
+
+reduction(min:min_val) — finds the minimum value across all threads.
+
+reduction(max:max_val) — finds the maximum value across all threads.
+
+reduction(+:sum) — computes the sum in parallel.
+
+average is computed outside the loop after summing.
+
+
+
+🔹 What is Parallel Reduction?
+Parallel reduction is a technique used in parallel programming where a set of values (like an array) is combined into a single result (like sum, max, min, or average) in parallel using multiple threads.
+
+
+
+✅ 1. What is Reduction in Parallel Programming?
+Answer:
+Reduction in parallel programming is a technique used to combine the results of parallel computations into a single value (e.g., sum, minimum, maximum). OpenMP provides built-in reduction clauses that allow variables to be combined safely across threads without race conditions.
+
+✅ 5. What are some common reduction operations supported in OpenMP?
+Answer:
+
++ (sum)
+
+* (product)
+
+min
+
+max
+
+&, |, ^ (bitwise)
+
+
+Answer:
+The program performs a single pass through the array:
+Time Complexity: O(n)
+Parallelism may reduce real execution time depending on the number of threads and processor cores.
+
+
+✅ 8. Real-life applications of parallel reduction?
+Answer:
+
+Image processing (e.g., finding pixel intensity extremes)
+
+Scientific computing (e.g., average temperature calculations)
+
+Financial analytics (e.g., min/max stock prices over time)
+
+Sensor data aggregation (IoT)
+
+*/
+
+
+
