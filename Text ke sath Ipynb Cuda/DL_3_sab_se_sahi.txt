@@ -1,0 +1,267 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, MaxPooling2D, Conv2D
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+
+
+
+
+
+# 1. Load CSV files
+train_df = pd.read_csv('fashion-mnist_train.csv')
+test_df = pd.read_csv('fashion-mnist_test.csv')
+
+
+
+
+
+# 2. Separate features and labels
+train_x = train_df.drop('label', axis=1).values
+train_y = train_df['label'].values
+
+test_x = test_df.drop('label', axis=1).values
+test_y = test_df['label'].values
+
+
+
+
+
+# 3. Normalize pixel values and reshape
+train_x = train_x / 255.0
+test_x = test_x / 255.0
+
+train_x = train_x.reshape(-1, 28, 28, 1)
+test_x = test_x.reshape(-1, 28, 28, 1)
+
+
+
+
+
+
+# 4. Build the model
+model = Sequential()
+model.add(Conv2D(filters=64, kernel_size=(3,3), activation='relu', input_shape=(28, 28, 1)))
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dense(10, activation='softmax'))
+
+model.summary()
+
+
+
+
+
+
+
+# 5. Compile the model
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+
+
+
+
+
+
+
+
+# 6. Train the model
+model.fit(train_x, train_y, epochs=5, validation_split=0.1)
+
+
+
+
+
+
+
+# 7. Evaluate
+loss, acc = model.evaluate(test_x, test_y)
+print(f"Test Loss: {loss:.4f}, Test Accuracy: {acc:.4f}")
+
+
+
+
+
+
+
+# 8. Prediction
+labels = ['t_shirt', 'trouser', 'pullover', 'dress', 'coat',
+          'sandal', 'shirt', 'sneaker', 'bag', 'ankle_boots']
+
+predictions = model.predict(test_x[:1])
+predicted_label = labels[np.argmax(predictions)]
+
+print("Predicted Label:", predicted_label)
+plt.imshow(test_x[0].reshape(28, 28), cmap='gray')
+plt.title(f"Predicted: {predicted_label}")
+plt.axis('off')
+plt.show()
+
+
+
+
+
+
+# 8. Prediction
+labels = ['trouser', 'pullover', 'dress', 'coat',
+          'sandal', 'shirt', 'sneaker', 'bag', 'ankle_boots']
+
+predictions = model.predict(test_x[:1])
+predicted_label = labels[np.argmax(predictions)]
+
+print("Predicted Label:", predicted_label)
+plt.imshow(test_x[0].reshape(28, 28), cmap='gray')
+plt.title(f"Predicted: {predicted_label}")
+plt.axis('off')
+plt.show()
+
+
+
+
+
+
+---------------------------------------------------------------------------------
+
+
+
+📦 1. Importing Required Libraries
+python
+Copy
+Edit
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, MaxPooling2D, Conv2D
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+NumPy & Pandas: Used for numerical operations and data handling.
+
+Matplotlib: For displaying images and plots.
+
+Keras (TensorFlow): Used for building and training the neural network.
+
+train_test_split: (Though unused here) splits data into training and validation/test sets.
+
+📁 2. Load Dataset from CSV Files
+python
+Copy
+Edit
+train_df = pd.read_csv('fashion-mnist_train.csv')
+test_df = pd.read_csv('fashion-mnist_test.csv')
+Reads Fashion MNIST training and test data from CSV files.
+
+These files contain pixel data and labels (0–9), where each row is one image.
+
+✂️ 3. Separate Features and Labels
+python
+Copy
+Edit
+train_x = train_df.drop('label', axis=1).values
+train_y = train_df['label'].values
+
+test_x = test_df.drop('label', axis=1).values
+test_y = test_df['label'].values
+train_x / test_x: All pixel values (features).
+
+train_y / test_y: The digit labels.
+
+🎨 4. Normalize and Reshape Images
+python
+Copy
+Edit
+train_x = train_x / 255.0
+test_x = test_x / 255.0
+
+train_x = train_x.reshape(-1, 28, 28, 1)
+test_x = test_x.reshape(-1, 28, 28, 1)
+Normalizes pixel values (0–255 → 0–1).
+
+Reshapes data into 28×28 grayscale image format (1 is the channel dimension).
+
+🏗️ 5. Build the CNN Model
+python
+Copy
+Edit
+model = Sequential()
+model.add(Conv2D(64, (3,3), activation='relu', input_shape=(28, 28, 1)))
+model.add(MaxPooling2D((2,2)))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dense(10, activation='softmax'))
+Conv2D: Extracts features from image using 64 filters.
+
+MaxPooling2D: Reduces spatial dimensions.
+
+Flatten: Converts 2D matrix to 1D.
+
+Dense Layers: Fully connected layers.
+
+Softmax: Outputs probability scores for 10 classes.
+
+⚙️ 6. Compile the Model
+python
+Copy
+Edit
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+Uses Adam optimizer and sparse categorical crossentropy because the labels are integers (not one-hot).
+
+🧠 7. Train the Model
+python
+Copy
+Edit
+model.fit(train_x, train_y, epochs=5, validation_split=0.1)
+Trains for 5 epochs using 90% of training data (10% is used for validation).
+
+🧪 8. Evaluate the Model
+python
+Copy
+Edit
+loss, acc = model.evaluate(test_x, test_y)
+print(f"Test Loss: {loss:.4f}, Test Accuracy: {acc:.4f}")
+Evaluates accuracy and loss on the test set.
+
+🔮 9. Make a Prediction
+python
+Copy
+Edit
+labels = ['t_shirt', 'trouser', 'pullover', 'dress', 'coat',
+          'sandal', 'shirt', 'sneaker', 'bag', 'ankle_boots']
+
+predictions = model.predict(test_x[:1])
+predicted_label = labels[np.argmax(predictions)]
+
+print("Predicted Label:", predicted_label)
+plt.imshow(test_x[0].reshape(28, 28), cmap='gray')
+plt.title(f"Predicted: {predicted_label}")
+plt.axis('off')
+plt.show()
+Predicts label for the first image in the test set.
+
+Converts numeric prediction (e.g., 2) to actual class name using labels.
+
+Displays the image with the predicted label.
+
+⚠️ 10. Repeated Block with Incorrect Labels List
+python
+Copy
+Edit
+labels = ['trouser', 'pullover', 'dress', 'coat',
+          'sandal', 'shirt', 'sneaker', 'bag', 'ankle_boots']
+This list misses "t_shirt" and has only 9 classes, which is incorrect.
+
+Using this for prediction will result in wrong or misleading label outputs.
+
+✅ Summary
+This code builds a simple CNN to classify Fashion MNIST images into one of 10 clothing categories. It:
+
+Loads and preprocesses the data.
+
+Builds and trains a CNN.
+
+Evaluates accuracy.
+
+Predicts and visualizes the result.

@@ -1,0 +1,319 @@
+import pandas as pd
+df = pd.read_csv("1_boston_housing.csv")
+
+
+
+
+
+from sklearn.model_selection import train_test_split
+
+X = df.loc[:, df.columns != 'MEDV']
+y = df.loc[:, df.columns == 'MEDV']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=123)
+
+
+
+
+
+
+print(f"\nTraining features shape: {X_train.shape}")
+print(f"Testing features shape: {X_test.shape}")
+print(f"Training target shape: {y_train.shape}")
+print(f"Testing target shape: {y_test.shape}")
+
+
+    
+
+
+
+
+
+from sklearn.preprocessing import MinMaxScaler
+mms = MinMaxScaler()
+mms.fit(X_train)
+X_train = mms.transform(X_train)
+X_test = mms.transform(X_test)
+
+
+
+
+
+
+
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+model = Sequential()
+
+model.add(Dense(128, input_shape=(13, ), activation='relu', name='dense_1'))
+model.add(Dense(64, activation='relu', name='dense_2'))
+model.add(Dense(1, activation='linear', name='dense_output'))
+
+model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+model.summary()
+
+
+
+
+
+
+
+
+
+
+history = model.fit(X_train, y_train, epochs=100, validation_split=0.05, verbose = 1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+print("\nEvaluating the model on test data...")
+mse_nn, mae_nn = model.evaluate(X_test, y_test, verbose=0) # verbose=0 to not show progress bar during evaluation
+
+print(f'\nMean squared error on test data: {mse_nn:.2f}')
+print(f'Mean absolute error on test data: {mae_nn:.2f}')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt
+# --- 7. Visualize Training History ---
+# Plot training & validation loss values
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1) # 1 row, 2 columns, 1st plot
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model Loss')
+plt.ylabel('Loss (MSE)')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Validation'], loc='upper right')
+
+# Plot training & validation MAE values
+plt.subplot(1, 2, 2) # 1 row, 2 columns, 2nd plot
+plt.plot(history.history['mae'])
+plt.plot(history.history['val_mae'])
+plt.title('Model MAE')
+plt.ylabel('MAE')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Validation'], loc='upper right')
+
+plt.tight_layout() # Adjust layout to prevent overlapping titles/labels
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# --- 8. Make Sample Predictions ---
+# Make predictions on the first few samples from the scaled test set
+num_samples_to_predict = 10
+sample_predictions = model.predict(X_test[:num_samples_to_predict])
+
+print(f"\nSample Predictions (first {num_samples_to_predict} test samples):")
+# Convert y_test (which is a DataFrame/Series) to numpy array for easier indexing
+y_test_array = y_test.values.flatten() # Use .values to get numpy array, .flatten() to make it 1D
+
+for i in range(num_samples_to_predict):
+    # sample_predictions is a 2D array, so access prediction using [i][0]
+    print(f"Sample {i+1}: Actual = {y_test_array[i]:.2f}, Predicted = {sample_predictions[i][0]:.2f}")
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------
+
+1. Importing Libraries and Dataset
+python
+Copy
+Edit
+import pandas as pd
+df = pd.read_csv("1_boston_housing.csv")
+Pandas is used for data manipulation and reading the dataset from a CSV file. The dataset 1_boston_housing.csv is assumed to contain information related to housing features such as crime rate, number of rooms, property tax rates, and the target variable MEDV (Median value of owner-occupied homes in $1000s).
+
+2. Splitting Data into Features and Target Variables
+python
+Copy
+Edit
+from sklearn.model_selection import train_test_split
+
+X = df.loc[:, df.columns != 'MEDV']  # Features (all columns except 'MEDV')
+y = df.loc[:, df.columns == 'MEDV']  # Target (column 'MEDV')
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=123)
+X contains the features (independent variables) from the dataset, which include various factors influencing the price of the house.
+
+y contains the target variable MEDV (dependent variable), representing the median house prices.
+
+train_test_split is used to split the dataset into training and testing subsets. 70% of the data is used for training, and 30% is reserved for testing.
+
+3. Data Normalization
+python
+Copy
+Edit
+from sklearn.preprocessing import MinMaxScaler
+mms = MinMaxScaler()
+mms.fit(X_train)
+X_train = mms.transform(X_train)
+X_test = mms.transform(X_test)
+MinMaxScaler scales the feature values into a range between 0 and 1 to avoid any variable dominating due to its large scale. This is important for machine learning models, particularly neural networks, as they are sensitive to the scale of input features.
+
+The scaler is first fitted on the training data (X_train) and then applied to both the training and testing data to ensure consistency.
+
+4. Building the Neural Network Model
+python
+Copy
+Edit
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+model = Sequential()
+
+model.add(Dense(128, input_shape=(13,), activation='relu', name='dense_1'))
+model.add(Dense(64, activation='relu', name='dense_2'))
+model.add(Dense(1, activation='linear', name='dense_output'))
+
+model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+model.summary()
+Neural Network Architecture:
+
+The model is defined using Keras, a high-level neural network API.
+
+Sequential Model: This type of model consists of a linear stack of layers.
+
+Dense Layer: Fully connected layers where each neuron receives input from all the neurons in the previous layer.
+
+Input Layer: The first Dense layer has 128 neurons and uses the ReLU (Rectified Linear Unit) activation function to introduce non-linearity.
+
+Hidden Layer: The second Dense layer has 64 neurons and also uses the ReLU activation function.
+
+Output Layer: The output layer has 1 neuron (since this is a regression task) and uses the linear activation function, suitable for continuous output.
+
+Compile Step:
+
+The model is compiled using the Adam optimizer, which adapts the learning rate to the parameters, and the Mean Squared Error (MSE) loss function, which is commonly used in regression tasks.
+
+The metric used for evaluation is Mean Absolute Error (MAE), which helps in understanding the average magnitude of the error in predictions.
+
+5. Model Training
+python
+Copy
+Edit
+history = model.fit(X_train, y_train, epochs=100, validation_split=0.05, verbose=1)
+The model is trained using the training dataset (X_train, y_train).
+
+Epochs: The model will iterate over the entire training dataset 100 times.
+
+Validation Split: 5% of the training data is set aside for validation during training to monitor the model’s performance on unseen data.
+
+Verbose: Displays detailed logs during training.
+
+6. Evaluating the Model
+python
+Copy
+Edit
+mse_nn, mae_nn = model.evaluate(X_test, y_test, verbose=0)
+After training, the model is evaluated on the testing dataset (X_test, y_test), and the Mean Squared Error (MSE) and Mean Absolute Error (MAE) are calculated.
+
+MSE indicates how well the model fits the data, while MAE measures the average absolute difference between predicted and actual values.
+
+7. Visualizing Training History
+python
+Copy
+Edit
+import matplotlib.pyplot as plt
+# Plot training & validation loss values
+plt.figure(figsize=(12, 5))
+...
+Matplotlib is used to visualize the training process.
+
+Loss vs. Epochs: This plot shows how the model’s loss decreases with each epoch. Ideally, it should decrease steadily as the model learns.
+
+MAE vs. Epochs: Similar to the loss plot, but tracks the Mean Absolute Error.
+
+These plots help diagnose overfitting (if validation loss diverges from training loss) and check if the model is learning effectively.
+
+8. Making Predictions
+python
+Copy
+Edit
+sample_predictions = model.predict(X_test[:num_samples_to_predict])
+The model is used to predict the housing prices for the first 10 samples in the test dataset.
+
+Predictions are compared with actual values from y_test to show how well the model performs on individual samples.
+
+9. Printing Predictions
+python
+Copy
+Edit
+for i in range(num_samples_to_predict):
+    print(f"Sample {i+1}: Actual = {y_test_array[i]:.2f}, Predicted = {sample_predictions[i][0]:.2f}")
+The actual and predicted values for the first 10 test samples are displayed for comparison, giving an insight into how accurate the model's predictions are.
+
+Key Takeaways:
+Data Preprocessing: Normalization is crucial for neural networks to ensure that each feature contributes equally to the learning process.
+
+Model Architecture: A simple feedforward neural network with two hidden layers is sufficient for this regression task.
+
+Training Process: The model is trained for 100 epochs, with validation data used to monitor for overfitting.
+
+Evaluation: After training, the model’s performance is assessed using MSE and MAE on the test dataset.
+
+Visualization: The training history plots help monitor whether the model is converging and not overfitting.
+
+This practical highlights the essential steps of building a neural network model using Keras to perform regression on a real-world dataset.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

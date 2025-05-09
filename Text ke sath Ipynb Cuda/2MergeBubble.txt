@@ -1,0 +1,279 @@
+#include <iostream>
+#include <vector>
+#include <omp.h>
+using namespace std;
+
+// Print array
+void printArray(const vector<int>& arr) {
+    for (int val : arr)
+        cout << val << " ";
+    cout << endl;
+}
+
+// Sequential Bubble Sort
+void bubbleSort(vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n-1; i++)
+        for (int j = 0; j < n-i-1; j++)
+            if (arr[j] > arr[j+1])
+                swap(arr[j], arr[j+1]);
+}
+
+// Parallel Bubble Sort (Odd-Even Sort)
+void parallelBubbleSort(vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 0; i < n; i++) {
+        #pragma omp parallel for
+        for (int j = i % 2; j < n - 1; j += 2) {
+            if (arr[j] > arr[j + 1])
+                swap(arr[j], arr[j + 1]);
+        }
+    }
+}
+
+// Merge function
+void merge(vector<int>& arr, int l, int m, int r) {
+    vector<int> temp;
+    int i = l, j = m + 1;
+    while (i <= m && j <= r)
+        temp.push_back(arr[i] < arr[j] ? arr[i++] : arr[j++]);
+    while (i <= m)
+        temp.push_back(arr[i++]);
+    while (j <= r)
+        temp.push_back(arr[j++]);
+    for (int k = 0; k < temp.size(); ++k)
+        arr[l + k] = temp[k];
+}
+
+// Sequential Merge Sort
+void mergeSort(vector<int>& arr, int l, int r) {
+    if (l >= r) return;
+    int m = (l + r) / 2;
+    mergeSort(arr, l, m);
+    mergeSort(arr, m + 1, r);
+    merge(arr, l, m, r);
+}
+
+// Parallel Merge Sort
+void parallelMergeSort(vector<int>& arr, int l, int r) {
+    if (l >= r) return;
+    int m = (l + r) / 2;
+
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        parallelMergeSort(arr, l, m);
+        #pragma omp section
+        parallelMergeSort(arr, m + 1, r);
+    }
+
+    merge(arr, l, m, r);
+}
+
+int main() {
+    // Your defined array
+    vector<int> data = {34, 12, 5, 66, 23, 89, 1, 77, 56, 43};
+    const int N = data.size();
+    vector<int> arr;
+
+    // Sequential Bubble Sort
+    arr = data;
+    double t1 = omp_get_wtime();
+    bubbleSort(arr);
+    double t2 = omp_get_wtime();
+    cout << "Sequential Bubble Sort Time: " << t2 - t1 << " seconds\n";
+    cout << "Result: ";
+    printArray(arr);
+
+    // Parallel Bubble Sort
+    arr = data;
+    t1 = omp_get_wtime();
+    parallelBubbleSort(arr);
+    t2 = omp_get_wtime();
+    cout << "Parallel Bubble Sort Time: " << t2 - t1 << " seconds\n";
+    cout << "Result: ";
+    printArray(arr);
+
+    // Sequential Merge Sort
+    arr = data;
+    t1 = omp_get_wtime();
+    mergeSort(arr, 0, N - 1);
+    t2 = omp_get_wtime();
+    cout << "Sequential Merge Sort Time: " << t2 - t1 << " seconds\n";
+    cout << "Result: ";
+    printArray(arr);
+
+    // Parallel Merge Sort
+    arr = data;
+    t1 = omp_get_wtime();
+    parallelMergeSort(arr, 0, N - 1);
+    t2 = omp_get_wtime();
+    cout << "Parallel Merge Sort Time: " << t2 - t1 << " seconds\n";
+    cout << "Result: ";
+    printArray(arr);
+
+    return 0;
+}
+
+
+
+
+
+/*
+Theory - 
+
+
+✅ What is Bubble Sort?
+Bubble Sort is a simple sorting algorithm that repeatedly compares adjacent elements in an array and swaps them if they are in the wrong order. This process continues until the entire array is sorted.
+
+🔁 How it works:
+Compare adjacent elements.
+
+If they are out of order, swap them.
+
+Repeat the process n-1 times.
+
+
+
+✅ What is Parallel Bubble Sort?
+Parallel Bubble Sort uses multiple threads to perform the comparisons and swaps concurrently, speeding up the process. A common way to parallelize Bubble Sort is using the Odd-Even Transposition Sort, which:
+
+In even phases, compares and swaps pairs like (0,1), (2,3), etc.
+
+In odd phases, compares and swaps pairs like (1,2), (3,4), etc.
+
+These pairs can be safely compared in parallel.
+
+
+
+Example -
+Original: [5, 3, 8, 6]
+
+
+
+▶ Bubble Sort Steps:
+Pass 1: Compare 5 & 3 → Swap → [3, 5, 8, 6]
+
+Compare 5 & 8 → OK
+
+Compare 8 & 6 → Swap → [3, 5, 6, 8]
+
+Now array is sorted.
+
+
+▶ Parallel Bubble Sort:
+Iteration 1 (even phase): compare (0,1), (2,3)
+→ [3,5,6,8]
+
+Iteration 2 (odd phase): compare (1,2)
+→ Already in order.
+
+Done!
+
+
+📌 Applications of Bubble Sort:
+Educational purposes (to teach sorting logic).
+
+Small datasets where simplicity matters more than speed.
+
+Checking if a list is already sorted.
+
+Embedded systems with limited memory.
+
+📌 Applications of Parallel Bubble Sort:
+Sorting large datasets in parallel environments (e.g., OpenMP).
+
+Real-time systems where quick approximate ordering is enough.
+
+GPU-based or multi-core processor environments for fast processing of data streams.
+
+
+❓Q8. What does #pragma omp parallel for do?
+Ans:
+It tells the compiler to parallelize the following for loop using available threads. Each iteration of the loop may run concurrently.
+
+❓Q9. What is omp_get_wtime() and why is it used?
+Ans:
+omp_get_wtime() returns the current wall clock time.
+It is used to measure the execution time of code blocks for performance comparison between sequential and parallel versions.
+
+Bubble sort -
+
+| Case             | Time Complexity | Description                                |
+| ---------------- | --------------- | ------------------------------------------ |
+| **Best Case**    | `O(n)`          | When the array is already sorted (1 pass). |
+| **Average Case** | `O(n²)`         | For random order input.                    |
+| **Worst Case**   | `O(n²)`         | When the array is in reverse order.        |
+
+
+Best case optimization happens only if you add a "no-swap" flag inside the loop.
+
+
+Parallel Bubble Sort -
+ 
+| Case             | Time Complexity            | Description                                                  |
+| ---------------- | -------------------------- | ------------------------------------------------------------ |
+| **Best Case**    | `O(n)` (with many threads) | If already sorted, and threads run truly in parallel.        |
+| **Average Case** | `O(n²/p)`                  | Where `p` is the number of threads (ideal scenario).         |
+| **Worst Case**   | `O(n²/p)`                  | Parallelization reduces time per phase but not total phases. |
+
+
+Important Note: In real-world systems, due to thread overhead and synchronization, you often don’t get ideal n²/p speedup.
+
+
+merge sort -
+Best Case - O(n log n) - Occurs in the case of a sorted array, but merge sort still divides and merges the array.
+
+
+Average Case - O(n log n) - For any random input, merge sort divides the array in half recursively and merges them in sorted order.
+
+Worst Case - O(n log n)	-Even in the worst case, merge sort divides the array and then merges, so the time complexity remains O(n log n).
+
+
+Merge Sort is an efficient divide-and-conquer algorithm, always taking O(n log n) for all cases, including best, average, and worst.
+
+
+Parallel Merge Sort - 
+
+Best Case - O(n log n / p) -  Parallelism can divide and conquer faster when multiple processors (or threads) are available. p is the number of processors/threads.
+
+
+Average Case - O(n log n / p) - With optimal parallelization, the work is divided across threads. Each thread processes a segment of the array, resulting in time complexity of O(n log n / p).
+
+
+Worst Case - O(n log n / p) - Even with parallelization, the recursive merge operation still contributes to the logarithmic factor.
+
+Parallel Merge Sort achieves speedup over the sequential version due to concurrent merging and dividing of the array, but the total complexity is still influenced by the logarithmic depth of the recursion tree.
+
+
+✅ Example of Merge Sort
+Suppose we have an unsorted array:
+[38, 27, 43, 3, 9, 82, 10]
+
+Merge Sort Steps:
+Divide into halves recursively:
+
+[38, 27, 43] and [3, 9, 82, 10]
+
+Then further to [38] [27, 43], and so on...
+
+Recursively sort and merge:
+
+[27, 43] becomes [27, 43]
+
+[38, 27, 43] becomes [27, 38, 43]
+
+Final sorted array: [3, 9, 10, 27, 38, 43, 82]
+
+Parallel Merge Sort:
+Same logic as above, but left and right halves are sorted in parallel using multi-threading (e.g., OpenMP), reducing the overall execution time on multi-core systems.
+
+
+
+
+eg - Large Data Sorting , DaTABASES 
+
+
+*/
+
+

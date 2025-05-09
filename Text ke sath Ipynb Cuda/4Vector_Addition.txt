@@ -1,0 +1,217 @@
+%%writefile vector_addition.cu
+#include <iostream>
+#include <cuda_runtime.h>
+using namespace std;
+
+// CUDA kernel: adds A[i] + B[i] and stores in C[i]
+__global__ void add(int* A, int* B, int* C, int N) {
+    int i = threadIdx.x;
+    if (i < N) C[i] = A[i] + B[i];
+}
+
+// Fill array with random numbers
+void fill(int* arr, int N) {
+    for (int i = 0; i < N; i++) arr[i] = rand() % 10;
+}
+
+// Print array
+void print(const int* arr, int N) {
+    for (int i = 0; i < N; i++) cout << arr[i] << " ";
+    cout << "\n";
+}
+
+int main() {
+    const int N = 4, size = N * sizeof(int);
+    int A[N], B[N], C[N], *dA, *dB, *dC;
+
+    fill(A, N); fill(B, N);
+    cout << "A: "; print(A, N);
+    cout << "B: "; print(B, N);
+
+    cudaMalloc(&dA, size); cudaMalloc(&dB, size); cudaMalloc(&dC, size);
+    cudaMemcpy(dA, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(dB, B, size, cudaMemcpyHostToDevice);
+
+    add<<<1, N>>>(dA, dB, dC, N);
+    cudaMemcpy(C, dC, size, cudaMemcpyDeviceToHost);
+
+    cout << "A + B = "; print(C, N);
+
+    cudaFree(dA); cudaFree(dB); cudaFree(dC);
+    return 0;
+}
+
+
+
+
+!nvcc -arch=sm_75 vector_addition.cu -o vector_addition
+!./vector_addition
+
+
+
+'''
+Theory :- 🔹 1. What is CUDA?
+Answer:
+CUDA (Compute Unified Device Architecture) is a parallel computing platform and API developed by NVIDIA that allows developers to use a CUDA-enabled GPU for general-purpose processing (GPGPU).
+
+🔹 2. What is Vector Addition in CUDA?
+Answer:
+It is a simple operation where each element of two arrays (vectors) A and B is added together to produce a third array C such that:
+
+
+C[i]=A[i]+B[i]
+This operation is embarrassingly parallel, meaning each addition can be done independently and simultaneously by different GPU threads.
+
+
+| Component                  | Explanation                                         |
+| -------------------------- | --------------------------------------------------- |
+| `__global__ void add(...)` | CUDA kernel function to be run on the device (GPU). |
+| `cudaMalloc`               | Allocates memory on the device (GPU).               |
+| `cudaMemcpy`               | Transfers data between host (CPU) and device (GPU). |
+| `add<<<1, N>>>`            | Launches the kernel with 1 block and N threads.     |
+| `cudaFree`                 | Frees memory allocated on the device.               |
+
+
+
+
+🔹 5. Time Complexity
+Answer:
+
+Sequential (CPU): 
+
+O(N)
+
+Parallel (GPU): 
+
+O(1) in ideal conditions (assuming enough threads and no bottlenecks), but practically 
+
+O(N/threads)
+
+
+🔹 6. Applications of Vector Addition
+Image processing (e.g., pixel addition for blending)
+
+Signal processing
+
+Physics simulations
+
+Financial modeling
+
+Neural network layer computations
+
+
+'''
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+#multiplication : 
+
+%%writefile matrix_mul.cu
+#include <iostream>
+#include <cstdlib>
+#include <cuda_runtime.h>
+using namespace std;
+
+// CUDA kernel for matrix multiplication
+__global__ void matMul(int* A, int* B, int* C, int N) {
+    int row = threadIdx.y, col = threadIdx.x;
+    int sum = 0;
+    for (int i = 0; i < N; i++)
+        sum += A[row * N + i] * B[i * N + col];
+    C[row * N + col] = sum;
+}
+
+// Fill matrix with random values
+void fill(int* m, int N) {
+    for (int i = 0; i < N * N; i++) m[i] = rand() % 10;
+}
+
+// Print matrix
+void print(const int* m, int N) {
+    for (int i = 0; i < N * N; i++) {
+        cout << m[i] << " ";
+        if ((i + 1) % N == 0) cout << "\n";
+    }
+    cout << "\n";
+}
+
+int main() {
+    const int N = 2, bytes = N * N * sizeof(int);
+    int A[N*N], B[N*N], C[N*N], *dA, *dB, *dC;
+
+    fill(A, N); fill(B, N);
+    cout << "A:\n"; print(A, N);
+    cout << "B:\n"; print(B, N);
+
+    cudaMalloc(&dA, bytes); cudaMalloc(&dB, bytes); cudaMalloc(&dC, bytes);
+    cudaMemcpy(dA, A, bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(dB, B, bytes, cudaMemcpyHostToDevice);
+
+    matMul<<<1, dim3(N, N)>>>(dA, dB, dC, N);
+    cudaMemcpy(C, dC, bytes, cudaMemcpyDeviceToHost);
+
+    cout << "A x B:\n"; print(C, N);
+
+    cudaFree(dA); cudaFree(dB); cudaFree(dC);
+    return 0;
+}
+
+
+
+
+
+
+!nvcc -arch=sm_75 matrix_mul.cu -o matrix_mul
+!./matrix_mul
+
+
+'''
+THEORY - 🔹 1. What is Matrix Multiplication?
+Matrix multiplication of two 
+
+N×N matrices A and B gives a matrix C, where:
+
+C[i][j]= 
+k=0
+∑
+N−1
+​
+ A[i][k]×B[k][j]
+
+
+🔹 3. Important CUDA Functions Used
+Function			Purpose
+cudaMalloc			Allocates memory on GPU.
+cudaMemcpy			Transfers data between host and device.
+matMul<<<1, dim3(N, N)>>>()	Launches the kernel with a 2D grid of threads.
+cudaFree			Frees GPU memory.
+
+
+Sequential (CPU)	
+
+O(N ^3)
+Parallel (CUDA)	Ideally 
+
+O(N^2) (each element in C is computed in parallel)
+
+With Shared Memory Optimization	Faster due to reduced global memory access (not used in this basic version)
+
+🔹 6. Applications of Matrix Multiplication
+Graphics and image transformations
+
+Machine Learning (Neural Networks)
+
+Physics simulations
+
+Scientific computing
+
+Signal processing
+
+
+'''
